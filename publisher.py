@@ -10,10 +10,13 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-def produce_messages(channel: "BlockingConnection") -> None:
+
+def declare_queue(channel: "BlockingConnection") -> None:
     queue = channel.queue_declare(queue=MQ_ROUTING_KEY)
-    log.info("Queue declared: %r %s %s", MQ_ROUTING_KEY, queue, queue.method.message_count)
-    message = f"Hello, World! {time.time()}"
+    log.info("Declared queue: %s", queue)
+
+def produce_messages(channel: "BlockingConnection", idx: int) -> None:
+    message = f"New message #{idx:02d}"
     log.info("\n\nPublishing message: %s", message)
     channel.basic_publish(
         exchange=MQ_EXCHANGE,
@@ -24,12 +27,15 @@ def produce_messages(channel: "BlockingConnection") -> None:
 
 
 def main():
-    configure_logging(level=logging.DEBUG)
+    configure_logging(level=logging.WARNING)
     with get_connection() as connection:
         log.info("Created connection: %s", connection)
         with connection.channel() as channel:
             log.info("Created channel: %s", channel)
-            produce_messages(channel)
+            declare_queue(channel)
+            for idx in range(1, 11):
+                produce_messages(channel=channel, idx=idx)
+                time.sleep(.5)
 
 
 if __name__ == "__main__":

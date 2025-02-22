@@ -20,13 +20,16 @@ def process_new_message(ch: "BlockingConnection", method: "Basic.Deliver", prope
 
     log.info("[ ] Start processing message %r", body)
     start = time.time()
-    time.sleep(0.05)
+
+    number = int(body[-2:])
+    is_odd = number % 2
+    time.sleep(1 + is_odd * 2)
     end = time.time()
-    log.info("Finished processing message %s ", body)
     ch.basic_ack(delivery_tag=method.delivery_tag)
-    log.info("[x] End processing message %r in %s seconds", body, end - start)
+    log.info("[x] Finished processing message %s in %s seconds", body, end - start)
 
 def consume_messages(channel: "BlockingConnection") -> None:
+    channel.basic_qos(prefetch_count=1)
     channel.basic_consume(
         queue=MQ_ROUTING_KEY,
         on_message_callback=process_new_message,
